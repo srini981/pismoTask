@@ -1,0 +1,88 @@
+definitions:
+  models.Accounts:
+    properties:
+      accountName:
+        type: string
+      document_number:
+        type: integer
+      id:
+        type: integer
+    type: object
+  models.Response:
+    properties:
+      err: {}
+      message:
+        type: string
+      response: {}
+    type: object
+info:
+  contact: {}
+paths:
+  /accounts:
+    post:
+      consumes:
+      - application/json
+      description: create account api for creating accounts
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: create account api
+      tags:
+      - accounts
+  /accounts/:ID:
+    get:
+      consumes:
+      - application/json
+      description: get account api for creating accounts
+      parameters:
+      - description: account ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Accounts'
+      summary: get account api
+      tags:
+      - accounts
+  /transaction:
+    post:
+      consumes:
+      - application/json
+      description: create transaction api for creating transaction
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: create transaction api
+      tags:
+      - transaction
+swagger: "2.0"
