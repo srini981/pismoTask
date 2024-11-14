@@ -18,9 +18,10 @@ type OperationTypes struct {
 }
 
 type Transactions struct {
-	TransactionId   int64 `gorm:"primaryKey"`
-	AccountID       int64 `json:"account_id"`
-	OperationTypeID int64 `json:"operation_type_id"`
-	Amount          float64
-	EventDate       string `json:"event_date"`
+	TransactionId   int64   `gorm:"primaryKey"`
+	AccountID       int64   `json:"account_id"`
+	OperationTypeID int64   `json:"operation_type_id"`
+	Amount          float64 `json:"amount"`
+	Balance         float64 `json:"balance"`
+	EventDate       string  `json:"event_date"`
 }

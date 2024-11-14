@@ -6,11 +6,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/srini981/pismoTask/database"
 	"github.com/srini981/pismoTask/models"
 )
+
+// credit voucher operation type variable
+var creditVoucher int64 = 4
 
 // @Summary create transaction api
 // @Description create transaction api for creating transaction
@@ -43,13 +47,21 @@ func CreateTransaction(c *gin.Context) {
 	ctx := context.Background()
 	defer ctx.Done()
 
-	if transaction.OperationTypeID != 4 && transaction.Amount > 0 {
+	if transaction.OperationTypeID != creditVoucher && transaction.Amount > 0 || (transaction.OperationTypeID == creditVoucher && transaction.Amount < 0) {
 		transaction.Amount = -1 * transaction.Amount
 	}
 
-	err = database.Client.CreateTransaction(ctx, transaction)
-	if err != nil {
+	transaction.Balance = transaction.Amount
+	transaction.EventDate = time.Now().String()
 
+	if transaction.OperationTypeID == creditVoucher {
+		err = database.Client.Discharge(ctx, transaction)
+
+	} else {
+		err = database.Client.CreateTransaction(ctx, transaction)
+	}
+
+	if err != nil {
 		response := models.Response{Err: err, Message: "failed to create  transaction"}
 		c.JSON(http.StatusBadRequest, response)
 		return

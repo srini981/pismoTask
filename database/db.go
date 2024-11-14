@@ -23,6 +23,7 @@ type clientInterface interface {
 	GetAccountByDocumentNumber(context.Context, int64) (models.Accounts, error)
 	CreateAccount(context.Context, models.Accounts) error
 	CreateTransaction(context.Context, models.Transactions) error
+	Discharge(context.Context, models.Transactions) error
 }
 
 // init function for postgres and redis clients
@@ -122,4 +123,63 @@ func (d *client) CreateTransaction(ctx context.Context, transaction models.Trans
 	}
 
 	return nil
+}
+
+// to handle the discharge feature if an transaction of type credit voucher comes in
+func (d *client) Discharge(ctx context.Context, currenttransaction models.Transactions) error {
+	transctions := []models.Transactions{}
+
+	err := dbclient.Transaction(func(tx *gorm.DB) error {
+
+		// query the transactions in the db
+		tx = dbclient.Model(models.Transactions{}).Where("account_id = ? and balance < 0", currenttransaction.AccountID).Scan(&transctions)
+
+		if tx.Error != nil && tx.Error.Error() != "" || tx.RowsAffected == 0 {
+			err := fmt.Errorf(fmt.Sprintf("failed to fetch transactions details in db %s", tx.Error.Error()))
+			return err
+		}
+
+		currentBalance := currenttransaction.Amount
+
+		// logic for handling the discharge
+		for index, transaction := range transctions {
+
+			if currentBalance == 0 {
+				break
+			}
+
+			temp := (-1 * transaction.Balance) - currentBalance
+
+			if temp <= 0 {
+
+				currentBalance = currentBalance - (-1 * transaction.Balance)
+				transctions[index].Balance = 0
+
+			} else if temp > 0 {
+
+				transctions[index].Balance = (-1 * temp)
+				currentBalance = 0
+
+			}
+
+		}
+
+		currenttransaction.Balance = currentBalance
+		transctions = append(transctions, currenttransaction)
+
+		currenttransaction.Balance = currentBalance
+
+		// update in db
+		tx = dbclient.Model(models.Transactions{}).Save(&transctions)
+
+		if tx.Error != nil && tx.Error.Error() != "" || tx.RowsAffected == 0 {
+
+			err := fmt.Errorf(fmt.Sprintf("failed to update transactions in db %s", tx.Error.Error()))
+			return err
+
+		}
+		return nil
+	})
+
+	return err
 }
